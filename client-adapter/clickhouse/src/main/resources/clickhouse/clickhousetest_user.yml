@@ -2,12 +2,10 @@ dataSourceKey: defaultDS
 destination: test_instance
 outerAdapterKey: clickhouse
 groupId: g1
-kuduMapping:
+clickhouseMapping:
   database: test
   table: test
   targetTable: test
-  targetPk:
-    id: id
   mapAll: true
   targetColumns:
     id:
@@ -15,5 +13,3 @@ kuduMapping:
     role_id:
     c_time:
     test1:
-  etlCondition:
-  commitBatch: 3000 # 批量提交的大小
