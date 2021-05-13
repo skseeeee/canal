@@ -1,13 +1,13 @@
 package com.alibaba.otter.canal.client.adapter.clickhouse;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import com.alibaba.druid.sql.builder.SQLBuilder;
 import com.alibaba.otter.canal.client.adapter.OuterAdapter;
 import com.alibaba.otter.canal.client.adapter.clickhouse.config.ConfigLoader;
 import com.alibaba.otter.canal.client.adapter.clickhouse.config.MappingConfig;
 import com.alibaba.otter.canal.client.adapter.clickhouse.service.ClickHouseSyncService;
 import com.alibaba.otter.canal.client.adapter.support.Dml;
 import com.alibaba.otter.canal.client.adapter.support.OuterAdapterConfig;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +26,8 @@ public class ClickHouseAdapter implements OuterAdapter {
     private Map<String, MappingConfig> clickHouseMapping = new ConcurrentHashMap<>();  // 文件名对应配置
 
     private Map<String, Map<String, MappingConfig>> mappingConfigCache = new ConcurrentHashMap<>();  // 库名-表名对应配置
+
+
 
     private Properties properties;
 
@@ -78,6 +80,5 @@ public class ClickHouseAdapter implements OuterAdapter {
 
     @Override
     public void destroy() {
-
     }
 }

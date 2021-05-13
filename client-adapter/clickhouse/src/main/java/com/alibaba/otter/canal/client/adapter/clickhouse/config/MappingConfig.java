@@ -23,6 +23,9 @@ public class MappingConfig implements AdapterConfig {
     //db映射配置
     private DbMapping dbMapping;
 
+    //sign模式
+    private boolean signMode;
+
     @Override
     public String getDataSourceKey() {
         return null;
@@ -69,6 +72,14 @@ public class MappingConfig implements AdapterConfig {
         this.dbMapping = dbMapping;
     }
 
+    public boolean isSignMode() {
+        return signMode;
+    }
+
+    public void setSignMode(boolean signMode) {
+        this.signMode = signMode;
+    }
+
     public void validate() {
     }
 
@@ -84,6 +95,10 @@ public class MappingConfig implements AdapterConfig {
         private String etlCondition;
 
         private Map<String, String> allMapColumns;
+
+        private boolean mapAll = false;   // 映射所有字段
+
+        private Map<String, String> targetColumns;  // 目标表字段映射
 
         public String getDatabase() {
             return database;
@@ -132,6 +147,22 @@ public class MappingConfig implements AdapterConfig {
         @Override
         public String getEtlCondition() {
             return null;
+        }
+
+        public boolean getMapAll() {
+            return mapAll;
+        }
+
+        public void setMapAll(boolean mapAll) {
+            this.mapAll = mapAll;
+        }
+
+        public Map<String, String> getTargetColumns() {
+            return targetColumns;
+        }
+
+        public void setTargetColumns(Map<String, String> targetColumns) {
+            this.targetColumns = targetColumns;
         }
     }
 
