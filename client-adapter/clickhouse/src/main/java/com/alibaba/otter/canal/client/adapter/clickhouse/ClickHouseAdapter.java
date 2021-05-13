@@ -27,8 +27,6 @@ public class ClickHouseAdapter implements OuterAdapter {
 
     private Map<String, Map<String, MappingConfig>> mappingConfigCache = new ConcurrentHashMap<>();  // 库名-表名对应配置
 
-
-
     private Properties properties;
 
     private boolean isTcpMode;
