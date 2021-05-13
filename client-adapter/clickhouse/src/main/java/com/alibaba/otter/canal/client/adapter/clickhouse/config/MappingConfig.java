@@ -98,6 +98,8 @@ public class MappingConfig implements AdapterConfig {
 
         private boolean mapAll = false;   // 映射所有字段
 
+        private String signKey = "sign"; //sign key 默认为sign
+
         private Map<String, String> targetColumns;  // 目标表字段映射
 
         public String getDatabase() {
@@ -163,6 +165,14 @@ public class MappingConfig implements AdapterConfig {
 
         public void setTargetColumns(Map<String, String> targetColumns) {
             this.targetColumns = targetColumns;
+        }
+
+        public String getSignKey() {
+            return signKey;
+        }
+
+        public void setSignKey(String signKey) {
+            this.signKey = signKey;
         }
     }
 
