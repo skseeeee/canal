@@ -56,8 +56,7 @@ canal.conf:
     groups:
     - groupId: g1
       outerAdapters:
-      - name: clickhouse
-        key: clickhouse
+      - name: logger
 #      - name: rdb
 #        key: mysql1
 #        properties:
