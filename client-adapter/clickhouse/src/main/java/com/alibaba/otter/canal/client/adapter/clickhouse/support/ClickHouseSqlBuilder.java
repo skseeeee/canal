@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Created by jiangtiteng on 2021/5/12
+ * Created by mew on 2021/5/14
  */
 public class ClickHouseSqlBuilder {
     public static enum SqlType {
