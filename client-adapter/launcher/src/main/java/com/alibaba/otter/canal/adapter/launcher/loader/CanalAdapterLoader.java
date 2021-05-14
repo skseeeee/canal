@@ -9,7 +9,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import com.alibaba.otter.canal.client.adapter.clickhouse.ClickHouseAdapter;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -202,12 +201,7 @@ public class CanalAdapterLoader {
     private void loadAdapter(OuterAdapterConfig config, List<OuterAdapter> canalOutConnectors) {
         try {
             OuterAdapter adapter;
-            if (config.getName().equalsIgnoreCase("clickhouse")) {
-                adapter = new ClickHouseAdapter();
-            } else {
-                adapter = loader.getExtension(config.getName(), StringUtils.trimToEmpty(config.getKey()));
-            }
-
+            adapter = loader.getExtension(config.getName(), StringUtils.trimToEmpty(config.getKey()));
 
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
             // 替换ClassLoader
