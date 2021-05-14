@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
  * Created by mew on 2021/5/14
  */
 public class ClickHouseSqlBuilder {
-    public static enum SqlType {
+    public enum SqlType {
         SQL_TYPE_INSERT {
             @Override
             public String spliceSql(ClickHouseSqlBuilder c) {
@@ -26,13 +26,15 @@ public class ClickHouseSqlBuilder {
             @Override
             public String spliceSql(ClickHouseSqlBuilder c) {
                 String updateFields = c.columns.stream().map(x -> String.format("%s = ?", c.reverseColumnsMap.get(x))).collect(Collectors.joining(","));
-                return String.format("alter table %s.%s update %s where %s=?", c.db, c.tableName, updateFields, c.pkNames);
+                String param = c.pkNames.stream().map(x -> String.format("%s = ?", x)).collect(Collectors.joining(" and "));
+                return String.format("alter table %s.%s update %s where %s", c.db, c.tableName, updateFields, param);
             }
         },
         SQL_TYPE_DELETE {
             @Override
             public String spliceSql(ClickHouseSqlBuilder c) {
-                return String.format("alter table %s.%s delete where %s=?", c.db, c.tableName, c.pkNames);
+                String param = c.pkNames.stream().map(x -> String.format("%s = ?", x)).collect(Collectors.joining(" and "));
+                return String.format("alter table %s.%s delete where %s", c.db, c.tableName, param);
             }
         };
 
@@ -68,7 +70,7 @@ public class ClickHouseSqlBuilder {
     /**
      * 主键名
      */
-    private String pkNames;
+    private List<String> pkNames;
 
     /**
      * 库名
@@ -117,12 +119,10 @@ public class ClickHouseSqlBuilder {
         return this;
     }
 
-
-    public ClickHouseSqlBuilder setPkNames(String pkNames) {
+    public ClickHouseSqlBuilder setPkNames(List<String> pkNames) {
         this.pkNames = pkNames;
         return this;
     }
-
 
     public ClickHouseSqlBuilder setSign(Boolean sign) {
         isSign = sign;
