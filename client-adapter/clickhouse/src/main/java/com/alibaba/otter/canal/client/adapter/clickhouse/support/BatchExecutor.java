@@ -9,6 +9,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -56,13 +57,15 @@ public class BatchExecutor {
         Connection connection = getConn();
         List<String> columnKeys = getColumnsFromDMl(dml);
         List<String> pkNames = dml.getPkNames();
-        Map<String, Integer> ctype = ColumnsTypeCache.getInstance().getColumnsTypeByMappingConfig(mappingConfig);
+        Map<String, Integer> ctype = ColumnsTypeCache.getInstance().getColumnsTypeByMappingConfig(mappingConfig, conn);
 
         ClickHouseSqlBuilder clickHouseSqlBuilder = new ClickHouseSqlBuilder()
                 .setType(ClickHouseSqlBuilder.SqlType.SQL_TYPE_UPDATE)
                 .setMapAll(mappingConfig.getDbMapping().getMapAll())
                 .setDbAndTable(mappingConfig.getDbMapping().getTargetDb(), mappingConfig.getDbMapping().getTable())
-                .setColumnsMap(mappingConfig.getDbMapping().getTargetColumns());
+                .setColumnsMap(mappingConfig.getDbMapping().getTargetColumns())
+                .setPkNames(pkNames)
+                .setColumns(columnKeys);
 
         String prepareUpdateSql = clickHouseSqlBuilder.build();
 
@@ -95,14 +98,15 @@ public class BatchExecutor {
 
     public void doBatchDelete(Dml dml, MappingConfig mappingConfig) {
         Connection connection = getConn();
-        Map<String, Integer> ctype = ColumnsTypeCache.getInstance().getColumnsTypeByMappingConfig(mappingConfig);
+        Map<String, Integer> ctype = ColumnsTypeCache.getInstance().getColumnsTypeByMappingConfig(mappingConfig, conn);
         List<String> pkNames = dml.getPkNames();
 
         ClickHouseSqlBuilder clickHouseSqlBuilder = new ClickHouseSqlBuilder()
                 .setType(ClickHouseSqlBuilder.SqlType.SQL_TYPE_DELETE)
                 .setMapAll(mappingConfig.getDbMapping().getMapAll())
                 .setDbAndTable(mappingConfig.getDbMapping().getTargetDb(), mappingConfig.getDbMapping().getTable())
-                .setColumnsMap(mappingConfig.getDbMapping().getTargetColumns());
+                .setColumnsMap(mappingConfig.getDbMapping().getTargetColumns())
+                .setPkNames(pkNames);
         String prepareDeleteSql = clickHouseSqlBuilder.build();
 
         try {
@@ -127,18 +131,19 @@ public class BatchExecutor {
     public void doBatchInsert(Dml dml, MappingConfig mappingConfig) {
         Connection connection = getConn();
         List<String> columnKeys = getColumnsFromDMl(dml);
-        Map<String, Integer> ctype = ColumnsTypeCache.getInstance().getColumnsTypeByMappingConfig(mappingConfig);
+        Map<String, Integer> ctype = ColumnsTypeCache.getInstance().getColumnsTypeByMappingConfig(mappingConfig, conn);
 
         ClickHouseSqlBuilder clickHouseSqlBuilder = new ClickHouseSqlBuilder()
                 .setType(ClickHouseSqlBuilder.SqlType.SQL_TYPE_INSERT)
                 .setMapAll(mappingConfig.getDbMapping().getMapAll())
+                .setColumns(columnKeys)
                 .setDbAndTable(mappingConfig.getDbMapping().getTargetDb(), mappingConfig.getDbMapping().getTable())
                 .setColumnsMap(mappingConfig.getDbMapping().getTargetColumns());
         String prepareInsertSql = clickHouseSqlBuilder.build();
 
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(prepareInsertSql);
-            addBatchForInsertWithSign(ctype, dml.getPkNames(), columnKeys, preparedStatement,
+            addBatchForInsertWithSign(ctype, columnKeys, preparedStatement,
                     ClickHouseSqlBuilder.SqlType.SQL_TYPE_INSERT, dml, 1, false);
             preparedStatement.executeBatch();
         } catch (SQLException e) {
@@ -151,12 +156,14 @@ public class BatchExecutor {
 
         Connection connection = getConn();
         List<String> columnKeys = getColumnsFromDMl(dmls.get(0));
-        Map<String, Integer> ctype = ColumnsTypeCache.getInstance().getColumnsTypeByMappingConfig(mappingConfig);
+        Map<String, Integer> ctype = ColumnsTypeCache.getInstance().getColumnsTypeByMappingConfig(mappingConfig, conn);
 
         ClickHouseSqlBuilder clickHouseSqlBuilder = new ClickHouseSqlBuilder()
                 .setType(ClickHouseSqlBuilder.SqlType.SQL_TYPE_INSERT)
                 .setMapAll(mappingConfig.getDbMapping().getMapAll())
                 .setSignKey(mappingConfig.getDbMapping().getSignKey())
+                .setSign(true)
+                .setColumns(columnKeys)
                 .setDbAndTable(mappingConfig.getDbMapping().getTargetDb(), mappingConfig.getDbMapping().getTable())
                 .setColumnsMap(mappingConfig.getDbMapping().getTargetColumns());
         String prepareInsertForSignSql = clickHouseSqlBuilder.build();
@@ -166,16 +173,16 @@ public class BatchExecutor {
 
             for (Dml dml : dmls) {
                 if (dml.getType() != null && dml.getType().equalsIgnoreCase("INSERT")) {
-                    addBatchForInsertWithSign(ctype, dml.getPkNames(), columnKeys, preparedStatement,
+                    addBatchForInsertWithSign(ctype, columnKeys, preparedStatement,
                             ClickHouseSqlBuilder.SqlType.SQL_TYPE_INSERT, dml, 1, true);
                 } else if (dml.getType() != null && dml.getType().equalsIgnoreCase("UPDATE")) {
-                    addBatchForInsertWithSign(ctype, dml.getPkNames(), columnKeys, preparedStatement,
-                            ClickHouseSqlBuilder.SqlType.SQL_TYPE_UPDATE, dml, -1, true);
-                    addBatchForInsertWithSign(ctype, dml.getPkNames(), columnKeys, preparedStatement,
+                    addBatchForInsertWithSign(ctype, columnKeys, preparedStatement,
+                            ClickHouseSqlBuilder.SqlType.SQL_TYPE_INSERT, dml, -1, true);
+                    addBatchForInsertWithSign(ctype, columnKeys, preparedStatement,
                             ClickHouseSqlBuilder.SqlType.SQL_TYPE_INSERT, dml, 1, true);
                 } else if (dml.getType() != null && dml.getType().equalsIgnoreCase("DELETE")) {
-                    addBatchForInsertWithSign(ctype, dml.getPkNames(), columnKeys, preparedStatement,
-                            ClickHouseSqlBuilder.SqlType.SQL_TYPE_DELETE, dml, -1, true);
+                    addBatchForInsertWithSign(ctype, columnKeys, preparedStatement,
+                            ClickHouseSqlBuilder.SqlType.SQL_TYPE_INSERT, dml, -1, true);
                 }
             }
             preparedStatement.executeBatch();
@@ -188,7 +195,6 @@ public class BatchExecutor {
 
     private void addBatchForInsertWithSign(Map<String, Integer> ctype,
                                            List<String> columnKeys,
-                                           List<String> pkNames,
                                            PreparedStatement preparedStatement,
                                            ClickHouseSqlBuilder.SqlType sqlType,
                                            Dml dml,
@@ -200,19 +206,13 @@ public class BatchExecutor {
             int i = 0;
             for (; i < columnKeys.size(); i++) {
                 String columnKey = columnKeys.get(i);
-                if (sqlType == ClickHouseSqlBuilder.SqlType.SQL_TYPE_DELETE
-                        && !pkNames.contains(columnKey)
-                ) {
-                    preparedStatement.setNull(i, ctype.get(columnKey));
-                } else {
-                    SyncUtil.setPStmt(ctype.get(columnKey),
-                            preparedStatement,
-                            datum.get(columnKey)
-                            , i);
-                }
+                SyncUtil.setPStmt(ctype.get(columnKey),
+                        preparedStatement,
+                        datum.get(columnKey)
+                        , i);
             }
             if (isSignMode) {
-                SyncUtil.setPStmt(3, preparedStatement, sign, i);
+                SyncUtil.setPStmt(Types.INTEGER, preparedStatement, sign, i);
             }
             preparedStatement.addBatch();
         }

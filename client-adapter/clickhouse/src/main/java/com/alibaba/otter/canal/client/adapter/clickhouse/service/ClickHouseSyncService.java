@@ -34,6 +34,8 @@ public class ClickHouseSyncService {
 
     private static final Logger logger = LoggerFactory.getLogger(ClickHouseSyncService.class);
 
+    private BatchExecutor batchExecutor;
+
     public ClickHouseSyncService(DataSource dataSource,
                                  Map<String, Map<String, MappingConfig>> mappingConfigCache,
                                  Boolean isTcpMode
@@ -41,8 +43,7 @@ public class ClickHouseSyncService {
         this.dataSource = dataSource;
         this.mappingConfigCache = mappingConfigCache;
         this.isTcpMode = isTcpMode;
-
-        ColumnsTypeCache.getInstance().setDataSource(dataSource);
+        this.batchExecutor = new BatchExecutor(dataSource);
     }
 
     public void sync(List<Dml> dmls) {
@@ -50,47 +51,39 @@ public class ClickHouseSyncService {
 
         groupByDmls.forEach((key, groupByDml) -> {
             Map<String, MappingConfig> configMap = mappingConfigCache.get(key);
-            try {
-                Connection connection = dataSource.getConnection();
-                configMap.forEach((fileName, mappingConfig) -> {
-                    if (mappingConfig.isSignMode()) {
-                        batchInsertInSignMode(groupByDml, mappingConfig, connection);
-                    } else {
-                        groupByDml.forEach(dml -> {
-                            String type = dml.getType();
-                            if (type != null && type.equalsIgnoreCase("INSERT")) {
-                                batchInsert(dml, mappingConfig, connection);
-                            } else if (type != null && type.equalsIgnoreCase("UPDATE")) {
-                                batchUpdate(dml, mappingConfig, connection);
-                            } else if (type != null && type.equalsIgnoreCase("DELETE")) {
-                                batchDelete(dml, mappingConfig, connection);
-                            }
-                        });
-                    }
-                });
-            } catch (SQLException e) {
-                logger.error("SQLException {}", e);
-                throw new RuntimeException(e);
-            }
-
-
+            configMap.forEach((fileName, mappingConfig) -> {
+                if (mappingConfig.isSignMode()) {
+                    batchInsertInSignMode(groupByDml, mappingConfig);
+                } else {
+                    groupByDml.forEach(dml -> {
+                        String type = dml.getType();
+                        if (type != null && type.equalsIgnoreCase("INSERT")) {
+                            batchInsert(dml, mappingConfig);
+                        } else if (type != null && type.equalsIgnoreCase("UPDATE")) {
+                            batchUpdate(dml, mappingConfig);
+                        } else if (type != null && type.equalsIgnoreCase("DELETE")) {
+                            batchDelete(dml, mappingConfig);
+                        }
+                    });
+                }
+            });
         });
     }
 
-    private void batchInsertInSignMode(List<Dml> dmls, MappingConfig mappingConfig, Connection connection) {
-        BatchExecutor.doBatchInsertInSignMode(dmls, mappingConfig, connection);
+    private void batchInsertInSignMode(List<Dml> dmls, MappingConfig mappingConfig) {
+        batchExecutor.doBatchInsertInSignMode(dmls, mappingConfig);
     }
 
-    private void batchInsert(Dml dml, MappingConfig mappingConfig, Connection connection) {
-        BatchExecutor.doBatchInsert(dml, mappingConfig, connection);
+    private void batchInsert(Dml dml, MappingConfig mappingConfig) {
+        batchExecutor.doBatchInsert(dml, mappingConfig);
     }
 
-    private void batchUpdate(Dml dml, MappingConfig mappingConfig, Connection connection) {
-        BatchExecutor.doBatchUpdate(dml, mappingConfig, connection);
+    private void batchUpdate(Dml dml, MappingConfig mappingConfig) {
+        batchExecutor.doBatchUpdate(dml, mappingConfig);
     }
 
-    private void batchDelete(Dml dml, MappingConfig mappingConfig, Connection connection) {
-        BatchExecutor.doBatchDelete(dml, mappingConfig, connection);
+    private void batchDelete(Dml dml, MappingConfig mappingConfig) {
+        batchExecutor.doBatchDelete(dml, mappingConfig);
     }
 
     private String getConfigKey(Dml dml) {
@@ -105,78 +98,4 @@ public class ClickHouseSyncService {
             return destination + "_" + database + "_" + table;
         }
     }
-
-//    private void batchInsert(List<Dml> dmls, MappingConfig mappingConfig) {
-//        Dml firstDml = dmls.stream().findFirst().get();
-//
-////        Map<String, String> columnsMap = SyncUtil.getColumnsMap(mappingConfig.getDbMapping(), firstDml.getData().get(0));
-////        String prepareSql = ClickHouseSqlBuilder.buildInsertSql(mappingConfig, firstDml, true);
-//
-//        //insert table xx (1,2,3)values(?,?,?)  sign -1
-//        try {
-//            Connection connection = dataSource.getConnection();
-//            PreparedStatement preparedStatement = dataSource.getConnection().prepareStatement(prepareSql);
-//
-//            Map<String, Integer> ctype = getTargetColumnType(connection, mappingConfig);
-//
-//
-//            for (int i = 0; i < dmls.size(); i++) {
-//                Dml dml = dmls.get(i);
-//
-//                for (int i1 = 0; i1 < dml.getData().size(); i1++) {
-//
-//                }
-//
-//                Integer type = ctype.get(Util.cleanColumn(src).toLowerCase());
-//                if (type == null) {
-//                    throw new RuntimeException("Target column: " + src + " not matched");
-//                }
-//
-//
-//                dml.getData().forEach(keyValueMap -> {
-//                    SyncUtil.setPStmt(type, preparedStatement, keyValueMap.get(), j);
-//
-//                });
-//
-//
-//            }
-//
-//
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//        }
-//
-//
-//    }
-
-
-//    private Map<String, Integer> getTargetColumnType(Connection conn, MappingConfig config) {
-//        MappingConfig.DbMapping dbMapping = config.getDbMapping();
-//        String cacheKey = config.getDestination() + "." + dbMapping.getDatabase() + "." + dbMapping.getTable();
-//        Map<String, Integer> columnType = columnsTypeCache.get(cacheKey);
-//        if (columnType == null) {
-//            synchronized (ClickHouseSyncService.class) {
-//                columnType = columnsTypeCache.get(cacheKey);
-//                if (columnType == null) {
-//                    columnType = new LinkedHashMap<>();
-//                    final Map<String, Integer> columnTypeTmp = columnType;
-//                    String sql = "SELECT * FROM " + SyncUtil.getDbTableName(dbMapping) + " WHERE 1=2";
-//                    Util.sqlRS(conn, sql, rs -> {
-//                        try {
-//                            ResultSetMetaData rsd = rs.getMetaData();
-//                            int columnCount = rsd.getColumnCount();
-//                            for (int i = 1; i <= columnCount; i++) {
-//                                columnTypeTmp.put(rsd.getColumnName(i).toLowerCase(), rsd.getColumnType(i));
-//                            }
-//                            columnsTypeCache.put(cacheKey, columnTypeTmp);
-//                        } catch (SQLException e) {
-//                            logger.error(e.getMessage(), e);
-//                        }
-//                    });
-//                }
-//            }
-//        }
-//        return columnType;
-//    }
-
 }
