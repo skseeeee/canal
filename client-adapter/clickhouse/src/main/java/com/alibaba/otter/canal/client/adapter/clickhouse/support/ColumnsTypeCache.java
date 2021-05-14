@@ -4,6 +4,7 @@ import com.alibaba.otter.canal.client.adapter.clickhouse.config.MappingConfig;
 import com.alibaba.otter.canal.client.adapter.support.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -51,7 +52,7 @@ public class ColumnsTypeCache {
                             ResultSetMetaData rsd = rs.getMetaData();
                             int columnCount = rsd.getColumnCount();
                             for (int i = 1; i <= columnCount; i++) {
-                                columnTypeTmp.put(rsd.getColumnName(i).toLowerCase(), rsd.getColumnType(i));
+                                columnTypeTmp.put(rsd.getColumnName(i), rsd.getColumnType(i));
                             }
                             columnsTypeCacheMap.put(cacheKey, columnTypeTmp);
                         } catch (SQLException e) {

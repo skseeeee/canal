@@ -1,15 +1,10 @@
 dataSourceKey: defaultDS
-destination: test_instance
+destination: adapter-test
 outerAdapterKey: clickhouse
 groupId: g1
-clickhouseMapping:
-  database: test
-  table: test
-  targetTable: test
+dbMapping:
+  database: ctest
+  table: test1
+  targetTable: test1
+  targetDb: ctest
   mapAll: true
-  targetColumns:
-    id:
-    name:
-    role_id:
-    c_time:
-    test1:

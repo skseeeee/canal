@@ -51,22 +51,26 @@ public class ClickHouseSyncService {
 
         groupByDmls.forEach((key, groupByDml) -> {
             Map<String, MappingConfig> configMap = mappingConfigCache.get(key);
-            configMap.forEach((fileName, mappingConfig) -> {
-                if (mappingConfig.isSignMode()) {
-                    batchInsertInSignMode(groupByDml, mappingConfig);
-                } else {
-                    groupByDml.forEach(dml -> {
-                        String type = dml.getType();
-                        if (type != null && type.equalsIgnoreCase("INSERT")) {
-                            batchInsert(dml, mappingConfig);
-                        } else if (type != null && type.equalsIgnoreCase("UPDATE")) {
-                            batchUpdate(dml, mappingConfig);
-                        } else if (type != null && type.equalsIgnoreCase("DELETE")) {
-                            batchDelete(dml, mappingConfig);
-                        }
-                    });
-                }
+            Optional.ofNullable(configMap).ifPresent(mappingConfigMap -> {
+                mappingConfigMap.forEach((fileName, mappingConfig) -> {
+                    if (mappingConfig.isSignMode()) {
+                        batchInsertInSignMode(groupByDml, mappingConfig);
+                    } else {
+                        groupByDml.forEach(dml -> {
+                            String type = dml.getType();
+                            if (type != null && type.equalsIgnoreCase("INSERT")) {
+                                batchInsert(dml, mappingConfig);
+                            } else if (type != null && type.equalsIgnoreCase("UPDATE")) {
+                                batchUpdate(dml, mappingConfig);
+                            } else if (type != null && type.equalsIgnoreCase("DELETE")) {
+                                batchDelete(dml, mappingConfig);
+                            }
+                        });
+                    }
+                });
+
             });
+
         });
     }
 

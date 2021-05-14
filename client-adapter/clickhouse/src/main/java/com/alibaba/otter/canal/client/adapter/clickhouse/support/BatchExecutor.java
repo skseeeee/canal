@@ -78,7 +78,7 @@ public class BatchExecutor {
                     SyncUtil.setPStmt(ctype.get(columnKey),
                             preparedUpdateStatement,
                             data.get(columnKey)
-                            , i);
+                            , i + 1);
                 }
 
                 for (int j = 0; j < pkNames.size(); j++) {
@@ -86,7 +86,7 @@ public class BatchExecutor {
                     SyncUtil.setPStmt(ctype.get(columnKey),
                             preparedUpdateStatement,
                             data.get(columnKey)
-                            , j + i);
+                            , j + i + 1);
                 }
             }
             preparedUpdateStatement.executeBatch();
@@ -113,12 +113,12 @@ public class BatchExecutor {
             PreparedStatement preparedStatement = connection.prepareStatement(prepareDeleteSql);
 
             for (Map<String, Object> data : dml.getData()) {
-                for (int i = 0; i < pkNames.size(); i++) {
+                for (int i = 0; i <= pkNames.size(); i++) {
                     String columnKey = pkNames.get(i);
                     SyncUtil.setPStmt(ctype.get(columnKey),
                             preparedStatement,
                             data.get(columnKey)
-                            , i);
+                            , i + 1);
                 }
             }
             preparedStatement.executeBatch();
@@ -209,10 +209,10 @@ public class BatchExecutor {
                 SyncUtil.setPStmt(ctype.get(columnKey),
                         preparedStatement,
                         datum.get(columnKey)
-                        , i);
+                        , i + 1);
             }
             if (isSignMode) {
-                SyncUtil.setPStmt(Types.INTEGER, preparedStatement, sign, i);
+                SyncUtil.setPStmt(Types.INTEGER, preparedStatement, sign, i + 1);
             }
             preparedStatement.addBatch();
         }

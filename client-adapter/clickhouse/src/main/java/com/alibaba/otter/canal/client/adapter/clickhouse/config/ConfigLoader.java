@@ -70,7 +70,7 @@ public class ConfigLoader {
                         + mappingConfig.getMapping().getDatabase() + "-" + mappingConfig.getMapping().getTable();
             } else {
                 k = StringUtils.trimToEmpty(mappingConfig.getDestination()) + "_"
-                        + mappingConfig.getMapping().getDatabase() + "-" + mappingConfig.getMapping().getTable();
+                        + mappingConfig.getMapping().getDatabase() + "_" + mappingConfig.getMapping().getTable();
             }
             Map<String, MappingConfig> configMap = mappingConfigCache.computeIfAbsent(k,
                     k1 -> new ConcurrentHashMap<>());
