@@ -13,15 +13,11 @@ public class ClickHouseSqlBuilder {
         SQL_TYPE_INSERT {
             @Override
             public String spliceSql(ClickHouseSqlBuilder c) {
-
                 if (c.isSign) {
                     c.columns.add(c.signKey);
                 }
-
                 String fields = c.columns.stream().map(x -> c.reverseColumnsMap.getOrDefault(x, c.signKey)).collect(Collectors.joining(","));
-
                 String placeholder = c.columns.stream().map(x -> "?").collect(Collectors.joining(","));
-
                 return String.format("insert into %s.%s(%s) values (%s)", c.db, c.tableName, fields, placeholder);
 
             }
@@ -29,9 +25,7 @@ public class ClickHouseSqlBuilder {
         SQL_TYPE_UPDATE {
             @Override
             public String spliceSql(ClickHouseSqlBuilder c) {
-
                 String updateFields = c.columns.stream().map(x -> String.format("%s = ?", c.reverseColumnsMap.get(x))).collect(Collectors.joining(","));
-
                 return String.format("alter table %s.%s update %s where %s=?", c.db, c.tableName, updateFields, c.pkNames);
             }
         },
@@ -43,7 +37,6 @@ public class ClickHouseSqlBuilder {
         };
 
         public abstract String spliceSql(ClickHouseSqlBuilder c);
-
 
     }
 
@@ -139,18 +132,17 @@ public class ClickHouseSqlBuilder {
     public ClickHouseSqlBuilder setColumnsMap(Map<String, String> columnsMap) {
         this.columnsMap = columnsMap;
         HashMap<String, String> rev = new HashMap<>();
-        for (Map.Entry<String, String> entry : columnsMap.entrySet())
+        for (Map.Entry<String, String> entry : columnsMap.entrySet()) {
             rev.put(entry.getValue(), entry.getKey());
+        }
         this.reverseColumnsMap = rev;
         return this;
     }
 
     public String build() {
-
         if (mapAll) {
             this.reverseColumnsMap = this.columns.stream().collect(Collectors.toMap(x -> x, x -> x));
         }
-
         if (isSign) {
             return SqlType.SQL_TYPE_INSERT.spliceSql(this);
         } else {
