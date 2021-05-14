@@ -9,6 +9,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -219,7 +220,7 @@ public class BatchExecutor {
                 }
             }
             if (isSignMode) {
-                SyncUtil.setPStmt(3, preparedStatement, sign, i);
+                SyncUtil.setPStmt(Types.INTEGER, preparedStatement, sign, i);
             }
             preparedStatement.addBatch();
         }
