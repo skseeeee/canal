@@ -177,12 +177,12 @@ public class BatchExecutor {
                             ClickHouseSqlBuilder.SqlType.SQL_TYPE_INSERT, dml, 1, true);
                 } else if (dml.getType() != null && dml.getType().equalsIgnoreCase("UPDATE")) {
                     addBatchForInsertWithSign(ctype, dml.getPkNames(), columnKeys, preparedStatement,
-                            ClickHouseSqlBuilder.SqlType.SQL_TYPE_UPDATE, dml, -1, true);
+                            ClickHouseSqlBuilder.SqlType.SQL_TYPE_INSERT, dml, -1, true);
                     addBatchForInsertWithSign(ctype, dml.getPkNames(), columnKeys, preparedStatement,
                             ClickHouseSqlBuilder.SqlType.SQL_TYPE_INSERT, dml, 1, true);
                 } else if (dml.getType() != null && dml.getType().equalsIgnoreCase("DELETE")) {
                     addBatchForInsertWithSign(ctype, dml.getPkNames(), columnKeys, preparedStatement,
-                            ClickHouseSqlBuilder.SqlType.SQL_TYPE_DELETE, dml, -1, true);
+                            ClickHouseSqlBuilder.SqlType.SQL_TYPE_INSERT, dml, -1, true);
                 }
             }
             preparedStatement.executeBatch();
