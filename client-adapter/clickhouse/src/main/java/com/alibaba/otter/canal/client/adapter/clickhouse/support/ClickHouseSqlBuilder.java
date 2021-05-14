@@ -1,5 +1,7 @@
 package com.alibaba.otter.canal.client.adapter.clickhouse.support;
 
+import org.springframework.util.CollectionUtils;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -131,16 +133,20 @@ public class ClickHouseSqlBuilder {
 
     public ClickHouseSqlBuilder setColumnsMap(Map<String, String> columnsMap) {
         this.columnsMap = columnsMap;
-        HashMap<String, String> rev = new HashMap<>();
-        for (Map.Entry<String, String> entry : columnsMap.entrySet()) {
-            rev.put(entry.getValue(), entry.getKey());
+
+        if (!CollectionUtils.isEmpty(this.columnsMap)) {
+            HashMap<String, String> rev = new HashMap<>();
+            for (Map.Entry<String, String> entry : columnsMap.entrySet()) {
+                rev.put(entry.getValue(), entry.getKey());
+            }
+            this.reverseColumnsMap = rev;
         }
-        this.reverseColumnsMap = rev;
+
         return this;
     }
 
     public String build() {
-        if (mapAll) {
+        if (mapAll && !CollectionUtils.isEmpty(this.columns)) {
             this.reverseColumnsMap = this.columns.stream().collect(Collectors.toMap(x -> x, x -> x));
         }
         if (isSign) {
