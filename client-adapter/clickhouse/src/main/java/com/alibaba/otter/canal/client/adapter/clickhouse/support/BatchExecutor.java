@@ -56,13 +56,15 @@ public class BatchExecutor {
         Connection connection = getConn();
         List<String> columnKeys = getColumnsFromDMl(dml);
         List<String> pkNames = dml.getPkNames();
-        Map<String, Integer> ctype = ColumnsTypeCache.getInstance().getColumnsTypeByMappingConfig(mappingConfig);
+        Map<String, Integer> ctype = ColumnsTypeCache.getInstance().getColumnsTypeByMappingConfig(mappingConfig, conn);
 
         ClickHouseSqlBuilder clickHouseSqlBuilder = new ClickHouseSqlBuilder()
                 .setType(ClickHouseSqlBuilder.SqlType.SQL_TYPE_UPDATE)
                 .setMapAll(mappingConfig.getDbMapping().getMapAll())
                 .setDbAndTable(mappingConfig.getDbMapping().getTargetDb(), mappingConfig.getDbMapping().getTable())
-                .setColumnsMap(mappingConfig.getDbMapping().getTargetColumns());
+                .setColumnsMap(mappingConfig.getDbMapping().getTargetColumns())
+                .setPkNames(pkNames)
+                .setColumns(columnKeys);
 
         String prepareUpdateSql = clickHouseSqlBuilder.build();
 
@@ -95,14 +97,16 @@ public class BatchExecutor {
 
     public void doBatchDelete(Dml dml, MappingConfig mappingConfig) {
         Connection connection = getConn();
-        Map<String, Integer> ctype = ColumnsTypeCache.getInstance().getColumnsTypeByMappingConfig(mappingConfig);
+        Map<String, Integer> ctype = ColumnsTypeCache.getInstance().getColumnsTypeByMappingConfig(mappingConfig, conn);
         List<String> pkNames = dml.getPkNames();
 
         ClickHouseSqlBuilder clickHouseSqlBuilder = new ClickHouseSqlBuilder()
                 .setType(ClickHouseSqlBuilder.SqlType.SQL_TYPE_DELETE)
                 .setMapAll(mappingConfig.getDbMapping().getMapAll())
                 .setDbAndTable(mappingConfig.getDbMapping().getTargetDb(), mappingConfig.getDbMapping().getTable())
-                .setColumnsMap(mappingConfig.getDbMapping().getTargetColumns());
+                .setColumnsMap(mappingConfig.getDbMapping().getTargetColumns())
+                .setPkNames(pkNames)
+                ;
         String prepareDeleteSql = clickHouseSqlBuilder.build();
 
         try {
@@ -127,11 +131,12 @@ public class BatchExecutor {
     public void doBatchInsert(Dml dml, MappingConfig mappingConfig) {
         Connection connection = getConn();
         List<String> columnKeys = getColumnsFromDMl(dml);
-        Map<String, Integer> ctype = ColumnsTypeCache.getInstance().getColumnsTypeByMappingConfig(mappingConfig);
+        Map<String, Integer> ctype = ColumnsTypeCache.getInstance().getColumnsTypeByMappingConfig(mappingConfig, conn);
 
         ClickHouseSqlBuilder clickHouseSqlBuilder = new ClickHouseSqlBuilder()
                 .setType(ClickHouseSqlBuilder.SqlType.SQL_TYPE_INSERT)
                 .setMapAll(mappingConfig.getDbMapping().getMapAll())
+                .setColumns(columnKeys)
                 .setDbAndTable(mappingConfig.getDbMapping().getTargetDb(), mappingConfig.getDbMapping().getTable())
                 .setColumnsMap(mappingConfig.getDbMapping().getTargetColumns());
         String prepareInsertSql = clickHouseSqlBuilder.build();
@@ -151,12 +156,14 @@ public class BatchExecutor {
 
         Connection connection = getConn();
         List<String> columnKeys = getColumnsFromDMl(dmls.get(0));
-        Map<String, Integer> ctype = ColumnsTypeCache.getInstance().getColumnsTypeByMappingConfig(mappingConfig);
+        Map<String, Integer> ctype = ColumnsTypeCache.getInstance().getColumnsTypeByMappingConfig(mappingConfig, conn);
 
         ClickHouseSqlBuilder clickHouseSqlBuilder = new ClickHouseSqlBuilder()
                 .setType(ClickHouseSqlBuilder.SqlType.SQL_TYPE_INSERT)
                 .setMapAll(mappingConfig.getDbMapping().getMapAll())
                 .setSignKey(mappingConfig.getDbMapping().getSignKey())
+                .setSign(true)
+                .setColumns(columnKeys)
                 .setDbAndTable(mappingConfig.getDbMapping().getTargetDb(), mappingConfig.getDbMapping().getTable())
                 .setColumnsMap(mappingConfig.getDbMapping().getTargetColumns());
         String prepareInsertForSignSql = clickHouseSqlBuilder.build();
