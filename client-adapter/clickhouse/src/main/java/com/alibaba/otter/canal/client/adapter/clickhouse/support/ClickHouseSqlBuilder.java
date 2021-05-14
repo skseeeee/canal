@@ -55,7 +55,7 @@ public class ClickHouseSqlBuilder {
     /**
      * 是否映射所有字段，为true时忽略columnsMap
      */
-    private Boolean mapAll;
+    private Boolean mapAll = false;
 
     /**
      * 字段映射 目标:源
@@ -146,6 +146,10 @@ public class ClickHouseSqlBuilder {
     }
 
     public String build() {
+
+        if (mapAll) {
+            this.reverseColumnsMap = this.columns.stream().collect(Collectors.toMap(x -> x, x -> x));
+        }
 
         if (isSign) {
             return SqlType.SQL_TYPE_INSERT.spliceSql(this);
