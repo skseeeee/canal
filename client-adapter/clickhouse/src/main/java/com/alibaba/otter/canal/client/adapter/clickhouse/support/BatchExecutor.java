@@ -114,7 +114,7 @@ public class BatchExecutor {
             PreparedStatement preparedStatement = connection.prepareStatement(prepareDeleteSql);
 
             for (Map<String, Object> data : dml.getData()) {
-                for (int i = 0; i <= pkNames.size(); i++) {
+                for (int i = 0; i < pkNames.size(); i++) {
                     String columnKey = pkNames.get(i);
                     SyncUtil.setPStmt(ctype.get(columnKey),
                             preparedStatement,
