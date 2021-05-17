@@ -88,6 +88,7 @@ public class BatchExecutor {
                             data.get(columnKey)
                             , j + i + 1);
                 }
+                preparedUpdateStatement.addBatch();
             }
             preparedUpdateStatement.executeBatch();
         } catch (SQLException e) {
@@ -120,6 +121,7 @@ public class BatchExecutor {
                             data.get(columnKey)
                             , i + 1);
                 }
+                preparedStatement.addBatch();
             }
             preparedStatement.executeBatch();
         } catch (SQLException e) {
