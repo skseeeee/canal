@@ -11,17 +11,17 @@ import java.sql.SQLException;
  * Created by mew on 2021/5/7
  * clickhouse操作类
  **/
-public class ClickHouseTemplate {
+public class BaseExecutor {
 
-    private static Logger logger = LoggerFactory.getLogger(ClickHouseTemplate.class);
+    private static Logger logger = LoggerFactory.getLogger(BaseExecutor.class);
 
-    private DataSource dataSource;
+    protected DataSource dataSource;
 
-    public ClickHouseTemplate(DataSource dataSource) {
+    public BaseExecutor(DataSource dataSource) {
         this.dataSource = dataSource;
     }
 
-    private Connection conn;
+    protected Connection conn;
 
     public Connection getConn() {
         if (conn == null) {
@@ -33,6 +33,12 @@ public class ClickHouseTemplate {
             }
         }
         return conn;
+    }
+
+    public void close() throws SQLException {
+        if (conn != null) {
+            conn.close();
+        }
     }
 
 }

@@ -1,13 +1,12 @@
 package com.alibaba.otter.canal.client.adapter.clickhouse;
 
 import com.alibaba.druid.pool.DruidDataSource;
-import com.alibaba.druid.sql.builder.SQLBuilder;
 import com.alibaba.otter.canal.client.adapter.OuterAdapter;
 import com.alibaba.otter.canal.client.adapter.clickhouse.config.ConfigLoader;
 import com.alibaba.otter.canal.client.adapter.clickhouse.config.MappingConfig;
 import com.alibaba.otter.canal.client.adapter.clickhouse.service.ClickHouseEtlService;
 import com.alibaba.otter.canal.client.adapter.clickhouse.service.ClickHouseSyncService;
-import com.alibaba.otter.canal.client.adapter.clickhouse.support.ClickHouseTemplate;
+import com.alibaba.otter.canal.client.adapter.clickhouse.support.BaseExecutor;
 import com.alibaba.otter.canal.client.adapter.support.Dml;
 import com.alibaba.otter.canal.client.adapter.support.EtlResult;
 import com.alibaba.otter.canal.client.adapter.support.OuterAdapterConfig;
@@ -42,6 +41,8 @@ public class ClickHouseAdapter implements OuterAdapter {
 
     private DruidDataSource dataSource;
 
+    private BaseExecutor clickHouseTemplate;
+
     private ClickHouseSyncService clickHouseSyncService;
 
     @Override
@@ -54,6 +55,7 @@ public class ClickHouseAdapter implements OuterAdapter {
 
         initDataSource(configuration.getProperties());
 
+        clickHouseTemplate = new BaseExecutor(this.dataSource);
         clickHouseSyncService = new ClickHouseSyncService(this.dataSource, mappingConfigCache, isTcpMode);
     }
 
@@ -88,7 +90,6 @@ public class ClickHouseAdapter implements OuterAdapter {
     @Override
     public EtlResult etl(String task, List<String> params) {
         MappingConfig mappingConfig = clickHouseMapping.get(task);
-        ClickHouseTemplate clickHouseTemplate = new ClickHouseTemplate(this.dataSource);
         ClickHouseEtlService clickHouseEtlService = new ClickHouseEtlService(clickHouseTemplate, mappingConfig);
 
         if (mappingConfig != null) {
@@ -103,17 +104,20 @@ public class ClickHouseAdapter implements OuterAdapter {
     @Override
     public Map<String, Object> count(String task) {
         MappingConfig mappingConfig = clickHouseMapping.get(task);
-        ClickHouseTemplate clickHouseTemplate = new ClickHouseTemplate(this.dataSource);
         Connection conn = clickHouseTemplate.getConn();
         MappingConfig.DbMapping dbMapping = mappingConfig.getDbMapping();
         try {
             PreparedStatement preparedStatement = conn.prepareStatement(String.format("select count() from %s.%s", dbMapping.getTargetDb(), dbMapping.getTargetTable()));
             ResultSet resultSet = preparedStatement.executeQuery();
-            long count = resultSet.getLong(1);
-            return new HashMap<String, Object>() {{
-                put("clickhouseTable", dbMapping.getTargetTable());
-                put("count", count);
+            HashMap<String, Object> res = new HashMap<String, Object>() {{
+                put("clickhouseTable", dbMapping.getTargetDb() + "." + dbMapping.getTargetTable());
             }};
+            if (resultSet.next()) {
+                res.put("count", resultSet.getLong(1));
+            } else {
+                res.put("count", "Query count failed!");
+            }
+            return res;
         } catch (SQLException e) {
             logger.error("Query count error ", e);
             throw new RuntimeException("Query count error!");
@@ -121,6 +125,20 @@ public class ClickHouseAdapter implements OuterAdapter {
     }
 
     @Override
+    public String getDestination(String task) {
+        MappingConfig config = clickHouseMapping.get(task);
+        if (config != null && config.getDbMapping() != null) {
+            return config.getDestination();
+        }
+        return null;
+    }
+
+    @Override
     public void destroy() {
+        try {
+            clickHouseTemplate.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

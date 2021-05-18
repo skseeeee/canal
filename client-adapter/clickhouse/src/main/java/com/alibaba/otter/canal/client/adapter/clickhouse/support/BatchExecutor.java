@@ -17,27 +17,11 @@ import java.util.Map;
 /**
  * Created by jiangtiteng on 2021/5/13
  */
-public class BatchExecutor {
+public class BatchExecutor extends BaseExecutor {
     private static Logger logger = LoggerFactory.getLogger(BatchExecutor.class);
 
-    private DataSource dataSource;
-
     public BatchExecutor(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
-
-    private Connection conn;
-
-    public Connection getConn() {
-        if (conn == null) {
-            try {
-                conn = dataSource.getConnection();
-                this.conn.setAutoCommit(false);
-            } catch (SQLException e) {
-                logger.error(e.getMessage(), e);
-            }
-        }
-        return conn;
+        super(dataSource);
     }
 
     private List<String> getColumnsFromDMl(Dml dml) {
