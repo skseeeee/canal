@@ -5,13 +5,21 @@ import com.alibaba.druid.sql.builder.SQLBuilder;
 import com.alibaba.otter.canal.client.adapter.OuterAdapter;
 import com.alibaba.otter.canal.client.adapter.clickhouse.config.ConfigLoader;
 import com.alibaba.otter.canal.client.adapter.clickhouse.config.MappingConfig;
+import com.alibaba.otter.canal.client.adapter.clickhouse.service.ClickHouseEtlService;
 import com.alibaba.otter.canal.client.adapter.clickhouse.service.ClickHouseSyncService;
+import com.alibaba.otter.canal.client.adapter.clickhouse.support.ClickHouseTemplate;
 import com.alibaba.otter.canal.client.adapter.support.Dml;
+import com.alibaba.otter.canal.client.adapter.support.EtlResult;
 import com.alibaba.otter.canal.client.adapter.support.OuterAdapterConfig;
+import com.alibaba.otter.canal.client.adapter.support.SPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -20,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Created by jiangtiteng on 2021/4/28
  */
+@SPI("clickhouse")
 public class ClickHouseAdapter implements OuterAdapter {
     private static Logger logger = LoggerFactory.getLogger(ClickHouseAdapter.class);
 
@@ -74,6 +83,41 @@ public class ClickHouseAdapter implements OuterAdapter {
         if (dmls == null || dmls.size() == 0)
             return;
         clickHouseSyncService.sync(dmls);
+    }
+
+    @Override
+    public EtlResult etl(String task, List<String> params) {
+        MappingConfig mappingConfig = clickHouseMapping.get(task);
+        ClickHouseTemplate clickHouseTemplate = new ClickHouseTemplate(this.dataSource);
+        ClickHouseEtlService clickHouseEtlService = new ClickHouseEtlService(clickHouseTemplate, mappingConfig);
+
+        if (mappingConfig != null) {
+            return clickHouseEtlService.importData(params);
+        } else {
+            EtlResult etlResult = new EtlResult();
+            etlResult.setErrorMessage("Don't find the config of " + task);
+            return etlResult;
+        }
+    }
+
+    @Override
+    public Map<String, Object> count(String task) {
+        MappingConfig mappingConfig = clickHouseMapping.get(task);
+        ClickHouseTemplate clickHouseTemplate = new ClickHouseTemplate(this.dataSource);
+        Connection conn = clickHouseTemplate.getConn();
+        MappingConfig.DbMapping dbMapping = mappingConfig.getDbMapping();
+        try {
+            PreparedStatement preparedStatement = conn.prepareStatement(String.format("select count() from %s.%s", dbMapping.getTargetDb(), dbMapping.getTargetTable()));
+            ResultSet resultSet = preparedStatement.executeQuery();
+            long count = resultSet.getLong(1);
+            return new HashMap<String, Object>() {{
+                put("clickhouseTable", dbMapping.getTargetTable());
+                put("count", count);
+            }};
+        } catch (SQLException e) {
+            logger.error("Query count error ", e);
+            throw new RuntimeException("Query count error!");
+        }
     }
 
     @Override
