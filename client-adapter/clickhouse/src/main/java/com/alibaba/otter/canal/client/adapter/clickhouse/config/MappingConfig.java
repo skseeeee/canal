@@ -28,7 +28,7 @@ public class MappingConfig implements AdapterConfig {
 
     @Override
     public String getDataSourceKey() {
-        return null;
+        return dataSourceKey;
     }
 
     @Override
